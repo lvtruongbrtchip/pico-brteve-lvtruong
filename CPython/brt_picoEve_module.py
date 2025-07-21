@@ -17,13 +17,14 @@ from .brt_eve_module import Brt_Eve_Module
 
 
 def spilock(f):
-    def wrapper(*args):
+    def wrapper(*args, **kwargs):
         spi = args[0].sp
         while not spi.try_lock():
             pass
-        r = f(*args)
-        spi.unlock()
-        return r
+        try:
+            return f(*args, **kwargs)
+        finally:
+            spi.unlock()
     return wrapper
 
 class Brt_PicoEve_Module(Brt_Eve_Module):
@@ -37,22 +38,22 @@ class Brt_PicoEve_Module(Brt_Eve_Module):
             print("Unknown arch, assuming this is still a Raspberry  Pi")
             self.sp = busio.SPI(board.SCLK, MOSI=board.MOSI, MISO=board.MISO)  #SPI for Eve
 
-		#cs of SPI for Eve - seems we need to use CE1 - https://github.com/adafruit/Adafruit_Blinka/issues/329
+        #cs of SPI for Eve - seems we need to use CE1 - https://github.com/adafruit/Adafruit_Blinka/issues/329
         self.cs = self.pin(board.CE1) #cs of SPI for Eve
         self.pdn = self.pin(board.D26) #power down pin of Eve
-		
+        
         #self.cs_ili9488 = self.pin(board.GP9) #CSX pin of ILI9488
         #self.dcx_ili9488 = self.pin(board.GP8) #D/CX pin of ILI9488      
         
         #self.sdcs = board.GP13 #cs of SPI for SD card
-		
+        
         #if not self.setup_sd(self.sdcs):
         #    self.pin(self.sdcs)
-		
-		#configure SPI for Eve
+        
+        #configure SPI for Eve
         self.setup_spi()
-		# A delay is required for raspberry pi
-		time.sleep(2)
+        # A delay is required for raspberry pi
+        time.sleep(2)
 
     def pin(self,p):
         r = digitalio.DigitalInOut(p)
